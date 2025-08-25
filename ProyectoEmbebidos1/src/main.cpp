@@ -8,11 +8,6 @@
 #include <ArduinoJson.h>
 #include <TinyGPS++.h>
 
-// ====== CONFIG WiFi ======
-const char* ssid = "NETLIFE-CHAVEZ -2.4 G";
-const char* password = "@raqueta2015";
-//Lab. Telematica
-//l4bt3l3m4tic@
 
 // ====== CONFIG Firebase ======
 const char* firebaseHost = "https://proyectoembebidos-16a3d-default-rtdb.firebaseio.com";
@@ -424,4 +419,5 @@ else {
   }
 
   delay(300);
+
 }
