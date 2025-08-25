@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URBANMAP</title>
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f0f5f9 0%, #dbeafe 100%);
+            color: #1e293b;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: linear-gradient(90deg, #1d4ed8 0%, #3b82f6 100%);
+            padding: 1.8rem 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #60a5fa, #3b82f6);
+        }
+
+        h1 {
+            font-size: 2.4rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .subtitle {
+            font-size: 1.15rem;
+            opacity: 0.92;
+            max-width: 700px;
+            margin: 0.8rem auto 0;
+            font-weight: 300;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            padding: 2.5rem;
+            gap: 2.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .map-container {
+            flex: 1;
+            min-width: 300px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+            height: 550px;
+            background: white;
+            position: relative;
+            border: 1px solid #cbd5e1;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .panel-container {
+            width: 380px;
+            background: white;
+            border-radius: 16px;
+            padding: 1.8rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid #cbd5e1;
+        }
+
+        .panel-title {
+            font-size: 1.7rem;
+            margin-bottom: 1.8rem;
+            color: #1d4ed8;
+            text-align: center;
+            padding-bottom: 0.8rem;
+            border-bottom: 2px solid #dbeafe;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .zones-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .zone-btn {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            color: #1d4ed8;
+            border: none;
+            border-radius: 12px;
+            padding: 1.3rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid #dbeafe;
+        }
+
+        .zone-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(59, 130, 246, 0.2);
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        }
+
+        .zone-btn i {
+            font-size: 1.5rem;
+            color: #3b82f6;
+        }
+
+        .info-panel {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            gap: 1.5rem;
+        }
+
+        .zone-info {
+            flex: 1;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1.8rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+        }
+
+        .zone-name {
+            font-size: 1.9rem;
+            color: #1d4ed8;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+        }
+
+        .report-count {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #fffbeb;
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .report-details {
+            line-height: 1.65;
+            font-size: 1.15rem;
+            color: #334155;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-back {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 1.2rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+            margin-top: auto;
+        }
+
+        .btn-back:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .map-overlay {
+            position: absolute;
+            bottom: 25px;
+            left: 25px;
+            background: rgba(255, 255, 255, 0.92);
+            padding: 14px 22px;
+            border-radius: 12px;
+            font-size: 1rem;
+            z-index: 10;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            color: #334155;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1.8rem;
+            background: #1d4ed8;
+            margin-top: auto;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 1rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 0.8rem;
+        }
+
+        .logo i {
+            font-size: 1.8rem;
+            color: #60a5fa;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                padding: 1.8rem;
+            }
+            
+            .panel-container {
+                width: 100%;
+            }
+            
+            .map-container {
+                height: 450px;
+            }
+        }
+
+        /* Efectos de tarjeta */
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Indicador de seguridad */
+        .safety-indicator {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+        
+        .high-risk {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        
+        .medium-risk {
+            background: #fef3c7;
+            color: #b45309;
+        }
+        
+        .low-risk {
+            background: #dcfce7;
+            color: #15803d;
+        }
+        
+        /* Estilo para marcadores */
+        .mapboxgl-marker {
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <i class="fas fa-map-marked-alt"></i>
+            <h1>URBANMAP-Guayas</h1>
+            <i class="fas fa-map-marked-alt"></i>
+        </div>
+        <p class="subtitle">Información de irregularidades en las vías de la ciudad. Selecciona una zona para ver detalles.</p>
+    </header>
+    
+    <div class="container">
+        <div class="map-container card">
+            <div id="map"></div>
+            <div class="map-overlay">
+                <i class="fas fa-info-circle"></i>
+                Mapa interactivo de Guayaquil - Navega para explorar :D
+            </div>
+        </div>
+        
+        <div class="panel-container card">
+            <h2 class="panel-title">
+                <i class="fas fa-map-marker-alt"></i>
+                Zonas del Guayas
+            </h2>
+            
+            <div class="zones-container" id="zonesPanel">
+                <button class="zone-btn" data-zone="Ceibos">
+                    <i class="fas fa-tree"></i>
+                    Ceibos
+                </button>
+                <button class="zone-btn" data-zone="Urdesa">
+                    <i class="fas fa-utensils"></i>
+                    Urdesa
+                </button>
+                <button class="zone-btn" data-zone="Mapasingue">
+                    <i class="fas fa-home"></i>
+                    Mapasingue
+                </button>
+                <button class="zone-btn" data-zone="Durán">
+                    <i class="fas fa-water"></i>
+                    Durán
+                </button>
+            </div>
+            
+            <div class="info-panel" id="infoPanel">
+                <div class="zone-info">
+                    <h2 class="zone-name" id="zoneName">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span id="zoneNameText">Zona</span>
+                    </h2>
+                    <div class="report-count" id="reportCount">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span id="reportCountText">0 reportes</span>
+                        <span id="safetyIndicator" class="safety-indicator"></span>
+                    </div>
+                    <p class="report-details" id="reportDetails">Detalles de reportes en esta zona...</p>
+                </div>
+                <button class="btn-back" id="btnBack">
+                    <i class="fas fa-arrow-left"></i>
+                    Volver al mapa
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    
+
+    <script>
+        // Configuración de Mapbox
+        mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYWNoYXZleiIsImEiOiJjbHozYzh0cG8wa3NmMmpxMmtmaGk1dHowIn0.ppmKELKdVrVZQFuvFXcK7g';
+        
+        function detectarSector(lat, lng) {
+    if (lng < -79.84 && lng > -79.86 && lat > -2.19 && lat < -2.17) {
+        return "Durán";
+    } else if (lng < -79.91 && lng > -79.93 && lat > -2.17 && lat < -2.16) {
+        return "Mapasingue";
+    } else if (lng < -79.96 && lng > -79.95 && lat > -2.19 && lat < -2.18) {
+        return "Ceibos";
+    } else if (lng < -79.91 && lng > -79.89 && lat > -2.18 && lat < -2.17) {
+        return "Urdesa";
+    } else {
+        return "Otro";
+    }
+}
+
+        // Datos de las zonas
+        const zonesData = {
+            'Ceibos': {
+                center: [-79.938, -2.159],
+                reports: 5,
+                details: ' Se recomienda evitar zonas con poca iluminación después de las 20:00.',
+                color: '#3b82f6',
+                icon: 'tree'
+            },
+            'Urdesa': {
+                center: [-79.907, -2.159],
+                reports: 12,
+                details: 'Se recomienda evitar caminar solo de noche, especialmente en calles secundarias. Se han incrementado las patrullas policiales en la zona.',
+                color: '#f59e0b',
+                icon: 'utensils'
+            },
+            'Mapasingue': {
+                center: [-79.913, -2.150],
+                reports: 20,
+                details: ' Precaución máxima en callejones y zonas poco transitadas. ',
+                color: '#ef4444',
+                icon: 'home'
+            },
+            'Durán': {
+                center: [-79.839, -2.175],
+                reports: 7,
+                details: 'Se recomienda utilizar transporte privado después del anochecer.',
+                color: '#10b981',
+                icon: 'water'
+            }
+        };
+        
+        // Inicializar mapa con estilo outdoors
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/outdoors-v12', // ESTILO CAMBIADO A OUTDOORS
+            center: [-79.9, -2.17], // Centro en Guayaquil
+            zoom: 11,
+            maxZoom: 16,
+            minZoom: 9
+        });
+        
+        // Añadir controles de navegación
+        map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+        
+        // Añadir marcadores para cada zona
+        Object.keys(zonesData).forEach(zone => {
+            const data = zonesData[zone];
+            
+            // Crear elemento para el marcador
+            const el = document.createElement('div');
+            el.className = 'marker';
+            el.style.background = data.color;
+            el.style.width = '20px';
+            el.style.height = '20px';
+            el.style.borderRadius = '50%';
+            el.style.border = '3px solid white';
+            el.style.boxShadow = '0 0 12px rgba(0,0,0,0.4)';
+            
+            // Añadir marcador al mapa
+            new mapboxgl.Marker(el)
+                .setLngLat(data.center)
+                .setPopup(new mapboxgl.Popup({ offset: 25 })
+                    .setHTML(`<strong>${zone}</strong><br><span style="color:${data.color}; font-weight:600">${data.reports} reportes</span>`))
+                .addTo(map);
+        });
+        
+        // Referencias a elementos del DOM
+        const zonesPanel = document.getElementById('zonesPanel');
+        const infoPanel = document.getElementById('infoPanel');
+        const zoneNameText = document.getElementById('zoneNameText');
+        const reportCountText = document.getElementById('reportCountText');
+        const reportDetails = document.getElementById('reportDetails');
+        const btnBack = document.getElementById('btnBack');
+        const zoneButtons = document.querySelectorAll('.zone-btn');
+        const safetyIndicator = document.getElementById('safetyIndicator');
+        
+        // Función para mostrar información de la zona
+        function showZoneInfo(zone) {
+            const data = zonesData[zone];
+            
+            // Actualizar información
+            zoneNameText.textContent = zone;
+            reportCountText.textContent = `${data.reports} reportes`;
+            reportDetails.textContent = data.details;
+            
+            // Actualizar indicador de seguridad
+            let safetyLevel = '';
+            let safetyClass = '';
+            
+            if (data.reports > 15) {
+                safetyLevel = 'ALTO RIESGO';
+                safetyClass = 'high-risk';
+            } else if (data.reports > 10) {
+                safetyLevel = 'RIESGO MEDIO';
+                safetyClass = 'medium-risk';
+            } else {
+                safetyLevel = 'BAJO RIESGO';
+                safetyClass = 'low-risk';
+            }
+            
+            safetyIndicator.textContent = safetyLevel;
+            safetyIndicator.className = `safety-indicator ${safetyClass}`;
+            
+            // Animación de vuelo al centro de la zona
+            map.flyTo({
+                center: data.center,
+                zoom: 13.5,
+                speed: 1.8,
+                curve: 1.4,
+                essential: true
+            });
+            
+            // Cambiar visibilidad de los paneles
+            zonesPanel.style.display = 'none';
+            infoPanel.style.display = 'flex';
+            
+            // Animación sutil
+            infoPanel.style.opacity = '0';
+            infoPanel.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                infoPanel.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                infoPanel.style.opacity = '1';
+                infoPanel.style.transform = 'translateY(0)';
+            }, 10);
+        }
+        
+        // Función para volver al estado inicial
+        function backToMain() {
+            // Volver a la vista general de Guayaquil
+            map.flyTo({
+                center: [-79.9, -2.17],
+                zoom: 11,
+                speed: 1.8,
+                curve: 1.4,
+                essential: true
+            });
+            
+            // Animación para ocultar el panel de info
+            infoPanel.style.opacity = '1';
+            infoPanel.style.transform = 'translateY(0)';
+            infoPanel.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            
+            setTimeout(() => {
+                infoPanel.style.opacity = '0';
+                infoPanel.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    // Restaurar visibilidad de los paneles
+                    zonesPanel.style.display = 'flex';
+                    infoPanel.style.display = 'none';
+                    
+                    // Restaurar estado de animación
+                    infoPanel.style.opacity = '1';
+                    infoPanel.style.transform = 'translateY(0)';
+                }, 300);
+            }, 10);
+        }
+        
+        // Event listeners para los botones de zona
+        zoneButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                showZoneInfo(button.dataset.zone);
+            });
+        });
+        
+        // Event listener para el botón de volver
+        btnBack.addEventListener('click', backToMain);
+        
+        // Ajustar tamaño del mapa al cargar la página
+        window.addEventListener('load', () => {
+            map.resize();
+        });
+        
+        // Ajustar mapa al redimensionar la ventana
+        window.addEventListener('resize', () => {
+            map.resize();
+        });
+    </script>
+    <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // Configuración de Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyBtbzzdC4i4lbLBc7Bmk6VjXqwYOnVsYrc",
+        authDomain: "proyectoembebidos-16a3d.firebaseapp.com",
+        databaseURL: "https://proyectoembebidos-16a3d-default-rtdb.firebaseio.com",
+        projectId: "proyectoembebidos-16a3d",
+        storageBucket: "proyectoembebidos-16a3d.firebasestorage.app",
+        messagingSenderId: "101351573467",
+        appId: "1:101351573467:web:956fcbe37adc5bcbe0c9fe",
+        measurementId: "G-BCSGG03V0L"
+    };
+
+    // Inicializa Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Escucha los datos de reportes
+    const reportesRef = ref(db, 'reportes');
+
+    // Esperar que el mapa cargue antes de agregar la capa de calor
+    map.on('load', () => {
+        onValue(reportesRef, (snapshot) => {
+            const puntos = [];
+
+            snapshot.forEach(child => {
+                const data = child.val();
+                if (data.lat && data.lng) {
+                    puntos.push([data.lng, data.lat]);
+                }
+            });
+
+            const geojson = {
+                type: 'FeatureCollection',
+                features: puntos.map(coord => ({
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: coord
+                    }
+                }))
+            };
+
+            if (map.getSource('heat')) {
+                map.getSource('heat').setData(geojson);
+            } else {
+                map.addSource('heat', { type: 'geojson', data: geojson });
+
+                map.addLayer({
+                    id: 'heatmap-layer',
+                    type: 'heatmap',
+                    source: 'heat',
+                    maxzoom: 15,
+                    paint: {
+                        'heatmap-weight': 1,
+                        'heatmap-intensity': 1,
+                        'heatmap-radius': 20,
+                        'heatmap-opacity': 0.7,
+                        'heatmap-color': [
+                            'interpolate', ['linear'], ['heatmap-density'],
+                            0, 'rgba(33,102,172,0)',
+                            0.2, 'rgb(103,169,207)',
+                            0.4, 'rgb(209,229,240)',
+                            0.6, 'rgb(253,219,199)',
+                            0.8, 'rgb(239,138,98)',
+                            1, 'rgb(178,24,43)'
+                        ]
+                    }
+                });
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
